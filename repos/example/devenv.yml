@@ -1,0 +1,7 @@
+# 一般例（docker 型）。実際の設定は ~/.config/devenv/repos/<repo>/ に置く（リポジトリには入れない）。
+# mode: docker  … アプリも compose で動く。override で Caddy に登録する
+# mode: host    … アプリはホストで動く。ports にポート名を列挙し、.env を env_overrides で書き換える
+mode: docker
+setup:
+  - docker compose up -d db cache
+  - docker compose run --rm app bin/setup-db   # リポジトリの DB 初期化コマンドに置き換える

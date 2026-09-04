@@ -1,0 +1,24 @@
+x-environment: &default-environment
+  APP_HOST: localhost
+  APP_PORT: "3000"
+  ASSET_HOST: http://localhost:3000
+services:
+  app:
+    image: example/app
+    environment: *default-environment
+    ports:
+      - "3000:3000"
+    depends_on: [db, cache]
+  worker:
+    image: example/app
+    environment: *default-environment
+  db:
+    image: mysql:8
+    ports:
+      - "3306:3306"
+  cache:
+    image: valkey/valkey:8
+  tunnel:
+    image: ngrok/ngrok
+    ports:
+      - "4040:4040"

@@ -1,0 +1,30 @@
+# 一般例。wt setup が worktree に docker-compose.devenv.yml としてコピーし、
+# .envrc の COMPOSE_FILE で上流の compose に重ねる。${APP_HOST} は .envrc から展開される。
+# 上流リポジトリのファイルは変更しない。
+services:
+  app:
+    ports: !reset []                     # ホスト publish をやめ Caddy 経由にする
+    networks:
+      - default
+      - devproxy
+    labels:
+      caddy: ${APP_HOST}
+      caddy.reverse_proxy: "{{upstreams 3000}}"
+      caddy.tls: internal
+    environment:                         # 上流の環境変数名に合わせて書き換える
+      APP_HOST: ${APP_HOST}
+      APP_PORT: "443"
+      ASSET_HOST: https://${APP_HOST}
+  worker:
+    environment:
+      APP_HOST: ${APP_HOST}
+      APP_PORT: "443"
+      ASSET_HOST: https://${APP_HOST}
+  db:
+    ports: !reset []                     # GUI から繋ぐときは docker compose port db 3306
+  tunnel:
+    profiles: [devenv-off]               # 既定で起動しない
+
+networks:
+  devproxy:
+    external: true
