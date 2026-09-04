@@ -4,4 +4,5 @@
 mode: docker
 setup:
   - docker compose up -d db cache
+  #  - docker compose run --rm app corepack yarn install   # JS 依存があるなら
   - docker compose run --rm app bin/setup-db   # リポジトリの DB 初期化コマンドに置き換える
