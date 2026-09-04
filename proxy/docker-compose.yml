@@ -1,0 +1,25 @@
+# devenv 常駐プロキシ。wt init が起動する。
+services:
+  caddy:
+    image: lucaslorentz/caddy-docker-proxy:2.9
+    container_name: devenv-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      CADDY_INGRESS_NETWORKS: devproxy
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - devproxy
+
+networks:
+  devproxy:
+    external: true
+
+volumes:
+  caddy_data:
+  caddy_config:
