@@ -2,22 +2,14 @@
 # リポジトリ・worktree の名前導出と devenv 側リポジトリ設定の読み取り。関数定義のみ。
 
 wt_repo_root() {
-  local common result
+  local common
   common=$(git -C "$1" rev-parse --path-format=absolute --git-common-dir 2>/dev/null) \
     || die "git リポジトリではありません: $1"
-  result=$(dirname "$common")
-  # macOS symlink normalization: remove /private prefix if present
-  result="${result#/private}"
-  printf '%s\n' "$result"
+  dirname "$common"
 }
 
 wt_worktree_root() {
-  local result
-  result=$(git -C "$1" rev-parse --show-toplevel 2>/dev/null) \
-    || die "git リポジトリではありません: $1"
-  # macOS symlink normalization: remove /private prefix if present
-  result="${result#/private}"
-  printf '%s\n' "$result"
+  git -C "$1" rev-parse --show-toplevel 2>/dev/null || die "git リポジトリではありません: $1"
 }
 
 wt_sanitize() {

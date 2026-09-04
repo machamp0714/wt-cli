@@ -3,6 +3,8 @@ WT_ROOT="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)"
 export WT_ROOT
 
 setup_tmp_config() {
+  # macOS の /var,/tmp は /private への symlink なので、git が返す物理パスと期待値を揃える
+  BATS_TEST_TMPDIR="$(cd "$BATS_TEST_TMPDIR" && pwd -P)"
   export DEVENV_CONFIG_DIR="$BATS_TEST_TMPDIR/config"
   export DEVENV_REPOS_DIR="$BATS_TEST_TMPDIR/repos"
   mkdir -p "$DEVENV_CONFIG_DIR" "$DEVENV_REPOS_DIR"
