@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Orca hook のシェルには brew の PATH が無いことがある
+export PATH="/opt/homebrew/bin:$PATH"
+
+# macOS 標準の /bin/bash は 3.2 で mapfile 等が無い。brew の bash 5 で再実行する
+if [ "${BASH_VERSINFO[0]}" -lt 4 ]; then
+  if [ -x /opt/homebrew/bin/bash ]; then
+    exec /opt/homebrew/bin/bash "$0" "$@"
+  fi
+  echo "[wt] error: bash 4 以上が必要です（brew install bash）" >&2
+  exit 1
+fi
+
+self="${BASH_SOURCE[0]}"
+[ -L "$self" ] && self="$(readlink "$self")"
+WT_ROOT="$(cd "$(dirname "$self")/.." && pwd)"
+export WT_ROOT
+
+for f in "$WT_ROOT"/lib/*.sh; do
+  # shellcheck disable=SC1090
+  source "$f"
+done
+
+usage() {
+  cat <<'EOF'
+usage: wt <command> [args]
+
+Commands:
+  init                 devproxy ネットワークと Caddy を起動しレジストリを初期化
+  trust                Caddy のルート CA を macOS に信頼登録（sudo）
+  new <name> [--base <ref>] [--branch <branch>]
+                       worktree を作って setup まで行う
+  rm <name>            teardown して worktree を削除
+  setup                cwd の worktree を初期化（Orca setup hook 用）
+  teardown             cwd の worktree のリソースを回収（Orca archive hook 用）
+  up | down            cwd の worktree の compose を起動・停止
+  ls                   全 worktree の URL と状態
+  gc [--dry-run]       孤児 compose プロジェクトと解放漏れポートを回収
+  prime                エージェント向けに URL と規約を出力（hook 用）
+
+Examples:
+  wt new my-feature
+  wt ls
+  wt help
+EOF
+}
+
+main() {
+  local sub="${1:-help}"; shift || true
+  case "$sub" in
+    help|-h|--help) usage ;;
+    *)
+      if declare -F "cmd_$sub" >/dev/null; then
+        "cmd_$sub" "$@"
+      else
+        usage >&2
+        die "unknown command: $sub"
+      fi ;;
+  esac
+}
+
+main "$@"
