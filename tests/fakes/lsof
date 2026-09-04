@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# 偽 lsof。環境変数 FAKE_BUSY_PORTS（空白区切り）に含まれるポートを LISTEN 中として扱う
+echo "lsof $*" >> "${FAKE_LOG:-/dev/null}"
+port=""
+for a in "$@"; do case "$a" in -iTCP:*) port="${a#-iTCP:}";; esac; done
+for b in ${FAKE_BUSY_PORTS:-}; do [ "$b" = "$port" ] && { echo "fake LISTEN $port"; exit 0; }; done
+exit 1
