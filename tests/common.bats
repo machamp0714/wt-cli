@@ -28,3 +28,13 @@ setup() { setup_tmp_config; }
   [ "$status" -eq 0 ]
   [[ "$output" == *"wt new"* ]]
 }
+
+@test "bin/wt は呼び出し側 PATH の shim を潰さない（PATH は後置）" {
+  local log="$BATS_TEST_TMPDIR/fake.log"
+  : > "$log"
+  run env PATH="$WT_ROOT/tests/fakes:$PATH" FAKE_LOG="$log" \
+    DEVENV_CONFIG_DIR="$DEVENV_CONFIG_DIR" \
+    "$WT_ROOT/bin/wt" gc --dry-run
+  [ "$status" -eq 0 ]
+  grep -q "docker compose ls" "$log"
+}

@@ -39,3 +39,10 @@ setup() {
   cmd_down
   grep -q "docker compose down" "$FAKE_LOG"
 }
+
+@test "down は追加引数を docker compose down にそのまま渡す" {
+  printf 'mode: docker\n' > "$CFG/devenv.yml"
+  cmd_setup "$REPO"; : > "$FAKE_LOG"
+  cmd_down -v
+  grep -q "docker compose down -v" "$FAKE_LOG"
+}

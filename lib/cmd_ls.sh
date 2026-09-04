@@ -28,6 +28,13 @@ cmd_ls() {
     while IFS= read -r repo; do
       while IFS= read -r path; do
         [ -n "$path" ] || continue
+        # worktree ディレクトリが消えていると git が使えない。prune 待ちとして 6 列を保つ。
+        # wt_project_name の中の die は $(...) の外に伝播しない（空文字が返るだけ）ので、
+        # 呼ぶ前に git 自身で判定する。
+        if ! git -C "$path" rev-parse --git-dir >/dev/null 2>&1; then
+          printf '%s\t%s\t%s\t%s\t%s\t%s\n' "(prunable)" "-" "-" "-" "-" "$path"
+          continue
+        fi
         branch=$(git -C "$path" branch --show-current 2>/dev/null || echo '?')
         project=$(wt_project_name "$path")
         status=$(awk -F'\t' -v p="$project" '$1 == p { print $2 }' <<<"$statuses")

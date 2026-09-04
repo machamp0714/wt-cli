@@ -33,17 +33,35 @@ cmd_new() {
 }
 
 cmd_rm() {
-  local name="${1:-}"
-  [ -n "$name" ] || die "usage: wt rm <name>"
+  local name="${1:-}" force=0
+  [ -n "$name" ] || die "usage: wt rm <name> [--force]"
+  shift
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --force) force=1; shift ;;
+      *) die "unknown option: $1" ;;
+    esac
+  done
   need git
-  local root path branch
+  local root path branch dirty
   root=$(wt_repo_root "$PWD")
   path=$(wt_worktree_path "$root" "$name")
   [ -d "$path" ] || die "worktree がありません: $path"
+
+  # 生成物（.envrc / .env / docker-compose.devenv.yml）は info/exclude 済みなので
+  # ここには出てこない。残っているのは利用者の作業なので teardown の前に止める。
+  dirty=$(git -C "$path" status --porcelain)
+  if [ -n "$dirty" ] && [ "$force" -eq 0 ]; then
+    die "worktree に未コミットの変更があります: ${path}（確認のうえ wt rm ${name} --force）"
+  fi
   branch=$(git -C "$path" branch --show-current)
 
   cmd_teardown "$path"
-  git -C "$root" worktree remove --force "$path"
+  if [ "$force" -eq 1 ]; then
+    git -C "$root" worktree remove --force "$path"
+  else
+    git -C "$root" worktree remove "$path"
+  fi
   if [ -n "$branch" ]; then
     if git -C "$root" branch -d "$branch" >/dev/null 2>&1; then
       log "ブランチ $branch を削除"

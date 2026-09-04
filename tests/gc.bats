@@ -76,3 +76,19 @@ EOF
   [ "$status" -eq 1 ]
   [[ "$output" == *"docker compose ls"* ]]
 }
+
+@test "gc は未知の引数で die し何も消さない" {
+  run cmd_gc --dryrun
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"unknown option"* ]]
+  [[ "$output" == *"wt gc [--dry-run]"* ]]
+  ! grep -q " down " "$FAKE_LOG"
+}
+
+@test "mismatched だけのときは「回収対象はありません」を出さない" {
+  export FAKE_COMPOSE_LS_JSON="[{\"Name\":\"wrong-name\",\"Status\":\"running(1)\",\"ConfigFiles\":\"$REPO/docker-compose.yml\"}]"
+  run cmd_gc --dry-run
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"wrong-name"* ]]
+  [[ "$output" != *"回収対象はありません"* ]]
+}

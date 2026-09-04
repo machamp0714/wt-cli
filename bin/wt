@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Orca hook のシェルには brew の PATH が無いことがある
-export PATH="/opt/homebrew/bin:$PATH"
+# Orca hook のシェルには brew の PATH が無いことがある。
+# 後置にして、呼び出し側が前に置いた shim（asdf/nodenv、テストの偽コマンド）を潰さない。
+export PATH="$PATH:/opt/homebrew/bin"
 
 # macOS 標準の /bin/bash は 3.2 で mapfile 等が無い。brew の bash 5 で再実行する
 if [ "${BASH_VERSINFO[0]}" -lt 4 ]; then
@@ -32,9 +33,9 @@ Commands:
   trust                Caddy のルート CA を macOS に信頼登録（sudo）
   new <name> [--base <ref>] [--branch <branch>]
                        worktree を作って setup まで行う
-  rm <name>            teardown して worktree を削除
-  setup                cwd の worktree を初期化（Orca setup hook 用）
-  teardown             cwd の worktree のリソースを回収（Orca archive hook 用）
+  rm <name> [--force]  teardown して worktree を削除（未コミットの変更があれば --force が必要）
+  setup [path]         worktree（既定は cwd）を初期化（Orca setup hook 用）
+  teardown [path]      worktree（既定は cwd）のリソースを回収（Orca archive hook 用）
   up | down            cwd の worktree の compose を起動・停止
   ls                   全 worktree の URL と状態
   gc [--dry-run]       孤児 compose プロジェクトと解放漏れポートを回収

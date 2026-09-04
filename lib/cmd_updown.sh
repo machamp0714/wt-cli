@@ -23,5 +23,5 @@ cmd_down() {
   need docker
   wt=$(wt_worktree_root "$PWD")
   wt_load_envrc "$wt"
-  (cd "$wt" && docker compose down)
+  (cd "$wt" && docker compose down "$@")
 }

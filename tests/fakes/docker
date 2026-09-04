@@ -4,6 +4,7 @@
 #   FAKE_DOCKER_PS_NAMES        : "ps --format {{.Names}}" が返す名前（空白区切り）
 #   FAKE_COMPOSE_LS_JSON        : "compose ls -a --format json" が返す JSON
 #   FAKE_DOCKER_FAIL_COMPOSE_LS : 1 なら "compose ls" が exit 1 で失敗する
+#   FAKE_DOCKER_FAIL_COMPOSE_DOWN : 1 なら "compose ... down" が stderr 付き exit 1 で失敗する
 echo "docker $*" >> "${FAKE_LOG:-/dev/null}"
 case "$1 $2" in
   "network inspect")
@@ -19,6 +20,12 @@ case "$1 $2" in
           exit 1
         fi
         printf '%s\n' "${FAKE_COMPOSE_LS_JSON:-[]}"; exit 0 ;;
+      *" down "*)
+        if [ "${FAKE_DOCKER_FAIL_COMPOSE_DOWN:-0}" = "1" ]; then
+          echo "fake docker: compose down failed" >&2
+          exit 1
+        fi
+        exit 0 ;;
       *) exit 0 ;;
     esac ;;
   *) exit 0 ;;

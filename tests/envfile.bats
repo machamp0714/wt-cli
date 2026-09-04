@@ -67,3 +67,17 @@ EOF
   run wt_expand 'a=${NOPE_VAR}/b'
   [ "$output" = 'a=${NOPE_VAR}/b' ]
 }
+
+@test ".env はマーカー行で始まりテンプレート内容が続く" {
+  printf 'A="1"\n' > "$D/.env.example"
+  wt_write_env "$D/.env.example" "$D/.env" '{}'
+  [ "$(head -1 "$D/.env")" = "$WT_ENVRC_MARKER" ]
+  [ "$(sed -n 2p "$D/.env")" = 'A="1"' ]
+}
+
+@test ".env のテンプレートと出力先が同じなら die する" {
+  printf 'A="1"\n' > "$D/.env"
+  run wt_write_env "$D/.env" "$D/.env" '{}'
+  [ "$status" -eq 1 ]
+  [ "$(cat "$D/.env")" = 'A="1"' ]
+}

@@ -9,7 +9,7 @@ wt_write_envrc() {
   local dir=$1 repo=$2 wtname=$3 project=$4 host=$5; shift 5
   {
     echo "$WT_ENVRC_MARKER"
-    echo "# 編集せず wt setup を再実行すること"
+    echo "# 編集しないこと。wt setup で再生成される（setup ステップも再実行される点に注意）"
     echo "export DEVENV_REPO=\"$(wt_dq_escape "$repo")\""
     echo "export DEVENV_WORKTREE=\"$(wt_dq_escape "$wtname")\""
     echo "export COMPOSE_PROJECT_NAME=\"$(wt_dq_escape "$project")\""
@@ -22,13 +22,19 @@ wt_write_envrc() {
 
 # ${VAR} と $VAR を現在の環境変数で展開する。未定義の変数は ${VAR} のまま残す（設定ミスを隠さないため）。
 wt_expand() {
+  need python3
   python3 -c 'import os, sys; print(os.path.expandvars(sys.argv[1]))' "$1"
 }
 
 wt_write_env() {
   local template=$1 out=$2 overrides=$3 key val
-  need jq
-  cp "$template" "$out"
+  # wt_expand は $(...) の中で呼ばれ、その中の die は伝播しない。ここでも確認する。
+  need jq; need python3
+  if [ "$template" -ef "$out" ]; then
+    die ".env のテンプレートと出力先が同じです: $out"
+  fi
+  # 1 行目はマーカー。wt 生成物かどうかを cmd_setup が判定できるようにする。
+  { echo "$WT_ENVRC_MARKER"; cat "$template"; } > "$out"
   while IFS= read -r key; do
     val=$(wt_expand "$(jq -r --arg k "$key" '.[$k]' <<<"$overrides")")
     if grep -qE "^#?[[:space:]]*${key}=" "$out"; then

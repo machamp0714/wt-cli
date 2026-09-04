@@ -70,3 +70,38 @@ setup() {
   git -C "$REPO" show-ref --verify --quiet refs/heads/5552
   [[ "$output" == *"未マージ"* ]]
 }
+
+@test "rm は未コミットの変更があれば teardown も削除もせず die する" {
+  cmd_new 5552
+  touch "$REPO/.claude/worktrees/5552/dirty"
+  : > "$FAKE_LOG"
+  run cmd_rm 5552
+  [ "$status" -eq 1 ]
+  [ -d "$REPO/.claude/worktrees/5552" ]
+  ! grep -q " down " "$FAKE_LOG"
+  [[ "$output" == *"--force"* ]]
+}
+
+@test "rm --force は未コミットの変更があっても削除する" {
+  cmd_new 5552
+  touch "$REPO/.claude/worktrees/5552/dirty"
+  run cmd_rm 5552 --force
+  [ "$status" -eq 0 ]
+  [ ! -d "$REPO/.claude/worktrees/5552" ]
+}
+
+@test "rm は生成物だけの worktree を --force なしで削除できる" {
+  cmd_new 5552
+  [ -f "$REPO/.claude/worktrees/5552/.envrc" ]
+  run cmd_rm 5552
+  [ "$status" -eq 0 ]
+  [ ! -d "$REPO/.claude/worktrees/5552" ]
+}
+
+@test "rm は未知のオプションで die し worktree を残す" {
+  cmd_new 5552
+  run cmd_rm 5552 --nope
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"unknown option"* ]]
+  [ -d "$REPO/.claude/worktrees/5552" ]
+}

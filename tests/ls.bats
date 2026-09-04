@@ -30,3 +30,12 @@ setup() {
   [ "$status" -eq 1 ]
   [[ "$output" == *"docker compose ls"* ]]
 }
+
+@test "ls は消えた worktree を (prunable) 行にしエラーを撒かない" {
+  rm -rf "$REPO/.claude/worktrees/5552"
+  run cmd_ls
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"(prunable)"* ]]
+  [[ "$output" != *"git リポジトリではありません"* ]]
+  [[ "$output" == *"$REPO/.claude/worktrees/5552"* ]]
+}

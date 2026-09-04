@@ -187,3 +187,46 @@ EOF
   grep -q "docker compose -p example-app-5552 down -v --rmi local --remove-orphans" "$FAKE_LOG"
   [ -z "$(wt_ports_for "$WT")" ]
 }
+
+@test "wt 以外が作った .envrc は上書きせず die し info/exclude も増やさない" {
+  printf 'mode: docker\n' > "$CFG/devenv.yml"
+  printf 'export MINE=1\n' > "$WT/.envrc"
+  git -C "$WT" add -f .envrc
+  git -C "$WT" -c user.email=t@t -c user.name=t commit -qm envrc
+  run cmd_setup "$WT"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *".envrc"* ]]
+  [ "$(cat "$WT/.envrc")" = "export MINE=1" ]
+  [ ! -f "$REPO/.git/info/exclude" ] || ! grep -qx '/.envrc' "$REPO/.git/info/exclude"
+}
+
+@test "host 型: wt 以外が作った .env は上書きせず die する" {
+  printf 'mode: host\nports: [PORT]\nenv_template: .env.example\n' > "$CFG/devenv.yml"
+  printf 'A="1"\n' > "$WT/.env.example"
+  printf 'SECRET="real"\n' > "$WT/.env"
+  run cmd_setup "$WT"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *".env"* ]]
+  [ "$(cat "$WT/.env")" = 'SECRET="real"' ]
+}
+
+@test "host 型: wt が生成した .env は再実行で上書きされる" {
+  printf 'mode: host\nports: [PORT]\nenv_template: .env.example\n' > "$CFG/devenv.yml"
+  printf 'A="1"\n' > "$WT/.env.example"
+  cmd_setup "$WT"
+  [ "$(head -1 "$WT/.env")" = "$WT_ENVRC_MARKER" ]
+  printf 'A="2"\n' > "$WT/.env.example"
+  cmd_setup "$WT"
+  grep -q 'A="2"' "$WT/.env"
+}
+
+@test "teardown は compose down 失敗時に stderr の末尾を添えて警告する" {
+  printf 'mode: docker\n' > "$CFG/devenv.yml"
+  cmd_setup "$WT"
+  : > "$FAKE_LOG"
+  export FAKE_DOCKER_FAIL_COMPOSE_DOWN=1
+  run cmd_teardown "$WT"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"停止に失敗しました"* ]]
+  [[ "$output" == *"fake docker: compose down failed"* ]]
+}

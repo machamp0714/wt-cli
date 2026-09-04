@@ -3,7 +3,12 @@
 
 cmd_gc() {
   local dry=0
-  [ "${1:-}" = "--dry-run" ] && dry=1
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --dry-run) dry=1; shift ;;
+      *) die "unknown option: ${1}（使い方: wt gc [--dry-run]）" ;;
+    esac
+  done
   need docker; need jq
   local name owner expected any=0
 
@@ -37,6 +42,7 @@ cmd_gc() {
 
   while IFS=$'\t' read -r name expected; do
     [ -n "$name" ] || continue
+    any=1
     log "警告: compose プロジェクト ${name} は規約名 ${expected} と一致しません（手動確認。消すなら docker compose -p ${name} down -v --rmi local --remove-orphans）"
   done < <(wt_compose_mismatched)
 

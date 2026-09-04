@@ -12,6 +12,15 @@ cmd_setup() {
   mode=$(wt_config_get "$devenv" .mode docker)
   [ -n "$devenv" ] || log "警告: $(wt_repos_dir)/$repo/devenv.yml が無いため .envrc の生成のみ行います"
 
+  # 手書きの .envrc / .env を壊さない。副作用（ポート割当・info/exclude 追記）より前に検査する。
+  # tracked なファイルは check-ignore が通らないため、ここで止めないと exclude 行が毎回増える。
+  if [ -f "$wt/.envrc" ] && [ "$(head -n1 "$wt/.envrc")" != "$WT_ENVRC_MARKER" ]; then
+    die ".envrc が wt 以外により作成されています。退避してから wt setup を再実行してください: ${wt}/.envrc"
+  fi
+  if [ "$mode" = host ] && [ -f "$wt/.env" ] && [ "$(head -n1 "$wt/.env")" != "$WT_ENVRC_MARKER" ]; then
+    die ".env が wt 以外により作成されています。退避してから wt setup を再実行してください: ${wt}/.env"
+  fi
+
   # host 型はポート割当（再実行時は既存の割当を使う）
   local extra=() names=() ports=() i
   if [ "$mode" = host ]; then
@@ -85,11 +94,12 @@ cmd_setup() {
 }
 
 cmd_teardown() {
-  local dir="${1:-$PWD}" wt project
+  local dir="${1:-$PWD}" wt project out
   need git; need docker
   wt=$(wt_worktree_root "$dir"); project=$(wt_project_name "$dir")
-  if ! wt_compose_down "$project" 2>/dev/null; then
-    log "警告: compose プロジェクト $project の停止に失敗（既に無い可能性）"
+  # 失敗理由は捨てずに最終行だけ添える（docker 未起動と「そもそも無い」を切り分けるため）
+  if ! out=$(wt_compose_down "$project" 2>&1); then
+    log "警告: compose プロジェクト ${project} の停止に失敗しました（既に無い可能性）: $(tail -n1 <<<"$out")"
   fi
   wt_ports_release "$wt"
   log "teardown 完了: $project"
