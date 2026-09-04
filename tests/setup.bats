@@ -73,6 +73,21 @@ EOF
   [ "$(wt_ports_for "$WT" | wc -l | tr -d ' ')" = "1" ]
 }
 
+@test "ポート再割当に失敗したら既存の割当を保持したまま die する" {
+  cat > "$CFG/devenv.yml" <<'EOF'
+mode: host
+ports: [PORT, PG_PORT]
+EOF
+  # 事前に 1 ポートだけ割り当てられている状態（config 変更前の名残）を再現
+  wt_ports_alloc "$WT" 1 >/dev/null
+  export WT_PORT_MIN=31001 WT_PORT_MAX=31001
+  # 唯一の空きポートを別オーナーが確保し、範囲を使い切る
+  wt_ports_alloc /other/wt 1 >/dev/null
+  run cmd_setup "$WT"
+  [ "$status" -eq 1 ]
+  [ "$(wt_ports_for "$WT")" = "31000" ]
+}
+
 @test "生成物は git に無視される（.gitignore に無くても）" {
   printf 'mode: host\nports: [PORT]\nenv_template: .env.example\n' > "$CFG/devenv.yml"
   printf 'A=1\n' > "$WT/.env.example"
@@ -82,7 +97,9 @@ EOF
   git -C "$WT" check-ignore -q .env
   git -C "$WT" check-ignore -q docker-compose.devenv.yml
   [ -z "$(git -C "$WT" status --porcelain -- .envrc .env docker-compose.devenv.yml)" ]
-  grep -qx '.envrc' "$REPO/.git/info/exclude"
+  grep -qx '/.envrc' "$REPO/.git/info/exclude"
+  mkdir -p "$WT/sub"
+  ! git -C "$WT" check-ignore -q sub/.env
 }
 
 @test "既に .gitignore で無視されていれば info/exclude には書かない" {
@@ -111,6 +128,18 @@ EOF
   [ "$status" -eq 0 ]
   [ -f "$WT/.envrc" ]
   [[ "$output" == *"repos/"* ]]
+}
+
+@test "devenv.yml が壊れていれば setup を実行せず die する" {
+  cat > "$CFG/devenv.yml" <<'EOF'
+mode: [unclosed
+setup:
+  - touch should-not-run.out
+EOF
+  run cmd_setup "$WT"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"devenv.yml"* ]]
+  [ ! -f "$WT/should-not-run.out" ]
 }
 
 @test "プロキシ未稼働なら die" {

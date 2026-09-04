@@ -37,3 +37,15 @@ setup() { setup_tmp_config; use_fakes; load_lib ports; }
   run wt_ports_release /wt/none
   [ "$status" -eq 0 ]
 }
+
+@test "assign は空き検索をせず指定ポートをそのまま owner に紐付ける" {
+  wt_ports_assign /wt/a 31005 31006
+  [ "$(wt_ports_for /wt/a | tr '\n' ' ')" = "31005 31006 " ]
+}
+
+@test "assign は他 owner の割当を上書きできる" {
+  wt_ports_alloc /wt/a 1 >/dev/null
+  wt_ports_assign /wt/b 31000
+  [ "$(wt_ports_for /wt/a)" = "" ]
+  [ "$(wt_ports_for /wt/b)" = "31000" ]
+}

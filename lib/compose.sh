@@ -10,12 +10,13 @@ wt_repos_file() { printf '%s/repos.txt\n' "$DEVENV_CONFIG_DIR"; }
 wt_repos_add() {
   mkdir -p "$DEVENV_CONFIG_DIR"
   touch "$(wt_repos_file)"
-  grep -qx "$1" "$(wt_repos_file)" || printf '%s\n' "$1" >> "$(wt_repos_file)"
+  grep -qxF "$1" "$(wt_repos_file)" || printf '%s\n' "$1" >> "$(wt_repos_file)"
 }
 
 wt_repos_list() {
   [ -f "$(wt_repos_file)" ] || return 0
   while IFS= read -r r; do [ -d "$r" ] && printf '%s\n' "$r"; done < "$(wt_repos_file)"
+  return 0
 }
 
 wt_load_envrc() {
@@ -38,7 +39,7 @@ wt_ensure_ignored() {
   for path in "$@"; do
     if ! git -C "$wt" check-ignore -q "$path"; then
       mkdir -p "$common/info"
-      printf '%s\n' "$path" >> "$exclude"
+      printf '/%s\n' "$path" >> "$exclude"
       log "$path を $exclude に追加（コミット対象外にする）"
     fi
   done

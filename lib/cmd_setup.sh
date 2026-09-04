@@ -15,12 +15,20 @@ cmd_setup() {
   # host 型はポート割当（再実行時は既存の割当を使う）
   local extra=() names=() ports=() i
   if [ "$mode" = host ]; then
-    mapfile -t names < <(wt_config_list "$devenv" .ports)
+    local names_raw
+    names_raw=$(wt_config_list "$devenv" .ports) || die "devenv.yml の読み取りに失敗しました: $devenv"
+    [ -n "$names_raw" ] && mapfile -t names <<<"$names_raw"
     if [ "${#names[@]}" -gt 0 ]; then
       mapfile -t ports < <(wt_ports_for "$wt")
       if [ "${#ports[@]}" -ne "${#names[@]}" ]; then
+        # 新しい割当が確定するまで既存の割当は残す。一時オーナーで確保してから移し替える
+        local fresh tmp_owner="$wt#pending"
+        fresh=$(wt_ports_alloc "$tmp_owner" "${#names[@]}") \
+          || die "ポート割当に失敗しました（wt gc で解放漏れを回収してください）"
         wt_ports_release "$wt"
-        read -ra ports <<<"$(wt_ports_alloc "$wt" "${#names[@]}")"
+        wt_ports_release "$tmp_owner"
+        read -ra ports <<<"$fresh"
+        wt_ports_assign "$wt" "${ports[@]}"
       fi
       for i in "${!names[@]}"; do extra+=("${names[$i]}=${ports[$i]}"); done
     fi
@@ -58,6 +66,8 @@ cmd_setup() {
   fi
 
   # setup ステップ
+  local steps_raw
+  steps_raw=$(wt_config_list "$devenv" .setup) || die "devenv.yml の読み取りに失敗しました: $devenv"
   local step n=0
   while IFS= read -r step; do
     [ -n "$step" ] || continue
@@ -66,7 +76,7 @@ cmd_setup() {
     if ! (cd "$wt" && bash -c "$step"); then
       die "setup[$n] が失敗しました。作成済みリソースは残しています。撤収は wt rm ${wtname:-<name>}"
     fi
-  done < <(wt_config_list "$devenv" .setup)
+  done <<<"$steps_raw"
 
   wt_repos_add "$root"
   printf '\n  %s\n\n' "https://$host"

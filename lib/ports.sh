@@ -25,10 +25,19 @@ wt_ports_alloc() {
     p=$((p + 1))
   done
   [ "${#found[@]}" -eq "$count" ] || die "空きポートがありません（${WT_PORT_MIN}-${WT_PORT_MAX}）。wt gc を実行してください"
-  local tmp; tmp=$(mktemp)
-  jq --arg o "$owner" --argjson ps "$(printf '%s\n' "${found[@]}" | jq -R . | jq -s .)" \
-    'reduce $ps[] as $p (.; .[$p] = $o)' "$file" > "$tmp" && mv "$tmp" "$file"
+  wt_ports_assign "$owner" "${found[@]}"
   printf '%s\n' "${found[*]}"
+}
+
+# 空きポートの検索はせず、指定されたポートをそのまま owner に紐付ける（再登録・移し替え用）
+wt_ports_assign() {
+  local owner=$1; shift
+  local file tmp
+  need jq
+  wt_ports_init; file=$(wt_ports_file)
+  tmp=$(mktemp)
+  jq --arg o "$owner" --argjson ps "$(printf '%s\n' "$@" | jq -R . | jq -s .)" \
+    'reduce $ps[] as $p (.; .[$p] = $o)' "$file" > "$tmp" && mv "$tmp" "$file"
 }
 
 wt_ports_release() {
