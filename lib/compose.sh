@@ -44,3 +44,28 @@ wt_ensure_ignored() {
     fi
   done
 }
+
+# name<TAB>first_config_file
+wt_compose_projects() {
+  need jq
+  docker compose ls -a --format json \
+    | jq -r '.[] | select(.ConfigFiles != null and .ConfigFiles != "") | [.Name, (.ConfigFiles | split(",")[0])] | @tsv'
+}
+
+wt_compose_orphans() {
+  local name file
+  while IFS=$'\t' read -r name file; do
+    [ -e "$file" ] || printf '%s\n' "$name"
+  done < <(wt_compose_projects)
+}
+
+wt_compose_mismatched() {
+  local name file dir expected
+  while IFS=$'\t' read -r name file; do
+    [ -e "$file" ] || continue
+    dir=$(dirname "$file")
+    git -C "$dir" rev-parse --show-toplevel >/dev/null 2>&1 || continue
+    expected=$(wt_project_name "$dir")
+    [ "$name" = "$expected" ] || printf '%s\t%s\n' "$name" "$expected"
+  done < <(wt_compose_projects)
+}
