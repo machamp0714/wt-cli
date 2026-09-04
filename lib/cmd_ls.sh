@@ -1,8 +1,11 @@
 # shellcheck shell=bash
 # wt ls。登録リポジトリの全 worktree を一覧する。
 
-# name<TAB>status の TSV。$(...) の中で呼ぶと die の exit がサブシェルに閉じ込められ
-# 呼び出し元に伝播しないため、必ず素の文（bare statement）として呼ぶこと。
+# name<TAB>status の TSV。docker compose ls に失敗したら die する。
+# ただし die の exit はコマンド置換 $(...) 内では、その置換を作ったサブシェルしか
+# 終了させない。そのため呼び出し側は必ず
+#   var=$(wt_compose_status_map) || exit "$?"（または || die "..."）
+# のように、代入文自体の終了コードを確認して失敗を伝播させること。
 wt_compose_status_map() {
   local raw
   raw=$(docker compose ls -a --format json) \
