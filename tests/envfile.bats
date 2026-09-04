@@ -43,3 +43,27 @@ EOF
   [[ "$output" == *'NEXT_PUBLIC_APP_URL="https://t.localhost"'* ]]
   [ "$(grep -c '^DATABASE_URL=' "$D/.env")" = "1" ]
 }
+
+@test ".envrc の値に \" と \\ が含まれてもシェルとして正しく読める" {
+  wt_write_envrc "$D" r w r-w r-w.localhost 'X=a"b\c'
+  run bash -c "source '$D/.envrc' && printf '%s' \"\$X\""
+  [ "$output" = 'a"b\c' ]
+}
+
+@test ".env の値にバックスラッシュが含まれても壊れない" {
+  cat > "$D/.env.example" <<'EOF'
+KEY="x"
+EOF
+  overrides='{"KEY":"C:\\new\\path"}'
+  wt_write_env "$D/.env.example" "$D/.env" "$overrides"
+  run grep '^KEY=' "$D/.env"
+  [ "$output" = 'KEY="C:\\new\\path"' ]
+  run bash -c "source '$D/.env' && printf '%s' \"\$KEY\""
+  [ "$output" = 'C:\new\path' ]
+}
+
+@test "未定義変数はそのまま残る" {
+  unset NOPE_VAR
+  run wt_expand 'a=${NOPE_VAR}/b'
+  [ "$output" = 'a=${NOPE_VAR}/b' ]
+}
