@@ -34,6 +34,9 @@ cmd_setup() {
     fi
   fi
 
+  # 生成物は途中で中断してもコミット対象にならないよう、書き出す前に無視設定を済ませる
+  wt_ensure_ignored "$wt" .envrc .env docker-compose.devenv.yml
+
   # compose override をコピーし COMPOSE_FILE を組み立てる
   if [ -n "$override" ]; then
     cp "$override" "$wt/docker-compose.devenv.yml"
@@ -46,7 +49,6 @@ cmd_setup() {
   fi
 
   wt_write_envrc "$wt" "$repo" "$wtname" "$project" "$host" "${extra[@]}"
-  wt_ensure_ignored "$wt" .envrc .env docker-compose.devenv.yml
   direnv allow "$wt"
   wt_load_envrc "$wt"
 
@@ -84,7 +86,7 @@ cmd_setup() {
 
 cmd_teardown() {
   local dir="${1:-$PWD}" wt project
-  need docker
+  need git; need docker
   wt=$(wt_worktree_root "$dir"); project=$(wt_project_name "$dir")
   if ! wt_compose_down "$project" 2>/dev/null; then
     log "警告: compose プロジェクト $project の停止に失敗（既に無い可能性）"

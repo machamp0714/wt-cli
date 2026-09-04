@@ -68,9 +68,26 @@ EOF
 }
 
 @test "setup の再実行はポートを再割当せず同じ値を保つ" {
-  printf 'mode: host\nports: [PORT]\n' > "$CFG/devenv.yml"
-  cmd_setup "$WT"; cmd_setup "$WT"
-  [ "$(wt_ports_for "$WT" | wc -l | tr -d ' ')" = "1" ]
+  printf 'mode: host\nports: [PORT, PG_PORT]\n' > "$CFG/devenv.yml"
+  cmd_setup "$WT"
+  local first envrc_first
+  first=$(wt_ports_for "$WT" | paste -sd, -)
+  envrc_first=$(grep -E '^export (PORT|PG_PORT)=' "$WT/.envrc")
+  cmd_setup "$WT"
+  [ "$(wt_ports_for "$WT" | paste -sd, -)" = "$first" ]
+  [ "$(grep -E '^export (PORT|PG_PORT)=' "$WT/.envrc")" = "$envrc_first" ]
+}
+
+@test "ポート名→番号の対応は登録順が非連番でも再実行後も安定する" {
+  printf 'mode: host\nports: [PORT, PG_PORT]\n' > "$CFG/devenv.yml"
+  mkdir -p "$DEVENV_CONFIG_DIR"
+  printf '{"31005":"%s","31002":"%s"}\n' "$WT" "$WT" > "$(wt_ports_file)"
+  cmd_setup "$WT"
+  grep -q 'export PORT="31002"' "$WT/.envrc"
+  grep -q 'export PG_PORT="31005"' "$WT/.envrc"
+  cmd_setup "$WT"
+  grep -q 'export PORT="31002"' "$WT/.envrc"
+  grep -q 'export PG_PORT="31005"' "$WT/.envrc"
 }
 
 @test "ポート再割当に失敗したら既存の割当を保持したまま die する" {
