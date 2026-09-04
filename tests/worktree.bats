@@ -37,6 +37,21 @@ setup() {
   [ "$status" -eq 1 ]
 }
 
+@test "new は --base に値が無ければ die し worktree を作らない" {
+  run cmd_new 5552 --base
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"--base"* ]]
+  [ ! -d "$REPO/.claude/worktrees/5552" ]
+}
+
+@test "new は setup 失敗時に worktree を残し wt rm を案内する" {
+  export FAKE_DOCKER_PS_NAMES=""
+  run cmd_new 5552
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"wt rm 5552"* ]]
+  [ -d "$REPO/.claude/worktrees/5552" ]
+}
+
 @test "rm は teardown して worktree を消す。マージ済みブランチは削除" {
   cmd_new 5552
   : > "$FAKE_LOG"

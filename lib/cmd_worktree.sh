@@ -9,8 +9,8 @@ cmd_new() {
   shift
   while [ $# -gt 0 ]; do
     case "$1" in
-      --base) base="$2"; shift 2 ;;
-      --branch) branch="$2"; shift 2 ;;
+      --base) [ $# -ge 2 ] || die "--base には値が必要です"; base="$2"; shift 2 ;;
+      --branch) [ $# -ge 2 ] || die "--branch には値が必要です"; branch="$2"; shift 2 ;;
       *) die "unknown option: $1" ;;
     esac
   done
@@ -27,7 +27,9 @@ cmd_new() {
   else
     git -C "$root" worktree add "$path" -b "$branch" ${base:+"$base"}
   fi
-  cmd_setup "$path"
+  if ! ( cmd_setup "$path" ); then
+    die "setup に失敗しました。worktree は残っています: ${path}（撤収は wt rm ${name}）"
+  fi
 }
 
 cmd_rm() {
