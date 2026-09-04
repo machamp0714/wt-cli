@@ -139,6 +139,19 @@ EOF
   [[ "$output" == *"wt rm"* ]]
 }
 
+@test "setup ステップが標準入力を読んでも後続ステップは消費されず実行される" {
+  cat > "$CFG/devenv.yml" <<'EOF'
+mode: docker
+setup:
+  - cat >/dev/null; echo one >> steps.out
+  - echo two >> steps.out
+  - echo three >> steps.out
+EOF
+  run cmd_setup "$WT"
+  [ "$status" -eq 0 ]
+  [ "$(cat "$WT/steps.out")" = "$(printf 'one\ntwo\nthree')" ]
+}
+
 @test "設定が無ければ .envrc だけ作って警告" {
   rmdir "$CFG"
   run cmd_setup "$WT"

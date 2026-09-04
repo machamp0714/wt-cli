@@ -71,14 +71,14 @@ cmd_setup() {
   local steps_raw
   steps_raw=$(wt_config_list "$devenv" .setup) || die "devenv.yml の読み取りに失敗しました: $devenv"
   local step n=0
-  while IFS= read -r step; do
+  while IFS= read -r -u 3 step; do
     [ -n "$step" ] || continue
     n=$((n + 1))
     log "setup[$n]: $step"
-    if ! (cd "$wt" && bash -c "$step"); then
+    if ! (cd "$wt" && bash -c "$step" </dev/null); then
       die "setup[$n] が失敗しました。作成済みリソースは残しています。撤収は wt rm ${wtname:-<name>}"
     fi
-  done <<<"$steps_raw"
+  done 3<<<"$steps_raw"
 
   wt_repos_add "$root"
   printf '\n  %s\n\n' "https://$host"
