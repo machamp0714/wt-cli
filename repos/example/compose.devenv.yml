@@ -8,9 +8,13 @@ services:
       - default
       - devproxy
     labels:
-      caddy: ${APP_HOST}
-      caddy.reverse_proxy: "{{upstreams 3000}}"
-      caddy.tls: internal
+      # caddy_0: HTTPS（tls internal。ブラウザで警告なしに開くには wt trust）
+      caddy_0: ${APP_HOST}
+      caddy_0.reverse_proxy: "{{upstreams 3000}}"
+      caddy_0.tls: internal
+      # caddy_1: HTTP 併設（CA 未信頼のブラウザ向け。リダイレクトしない）
+      caddy_1: http://${APP_HOST}
+      caddy_1.reverse_proxy: "{{upstreams 3000}}"
     environment:                         # 上流の環境変数名に合わせて書き換える
       APP_HOST: ${APP_HOST}
       APP_PORT: "443"

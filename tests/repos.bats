@@ -15,7 +15,8 @@ setup() {
 @test "example の override は上流 compose と合成でき、ラベル・ネットワーク・環境変数が入る" {
   run docker compose --project-directory "$D" config
   [ "$status" -eq 0 ]
-  [[ "$output" == *"caddy: example-app-t.localhost"* ]]
+  [[ "$output" == *"caddy_0: example-app-t.localhost"* ]]
+  [[ "$output" == *"caddy_1: http://example-app-t.localhost"* ]]
   [[ "$output" == *"devproxy"* ]]
   [[ "$output" == *"APP_HOST: example-app-t.localhost"* ]]
   [[ "$output" == *"ASSET_HOST: https://example-app-t.localhost"* ]]
