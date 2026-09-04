@@ -7,6 +7,11 @@ cmd_gc() {
   need docker; need jq
   local name owner expected any=0
 
+  # wt_compose_orphans / wt_compose_mismatched は < <(...) プロセス置換の中で
+  # wt_compose_projects を呼ぶため、その中で die しても exit がサブシェルに
+  # 閉じ込められ cmd_gc には伝播しない。ここで一度直接呼んで疎通確認する。
+  wt_compose_projects >/dev/null
+
   while IFS= read -r name; do
     [ -n "$name" ] || continue
     any=1
@@ -32,7 +37,7 @@ cmd_gc() {
 
   while IFS=$'\t' read -r name expected; do
     [ -n "$name" ] || continue
-    log "警告: compose プロジェクト $name は規約名 $expected と一致しません（手動確認。消すなら docker compose -p $name down -v）"
+    log "警告: compose プロジェクト ${name} は規約名 ${expected} と一致しません（手動確認。消すなら docker compose -p ${name} down -v --rmi local --remove-orphans）"
   done < <(wt_compose_mismatched)
 
   [ "$any" -eq 1 ] || log "回収対象はありません"

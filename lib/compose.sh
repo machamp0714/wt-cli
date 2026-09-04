@@ -45,25 +45,47 @@ wt_ensure_ignored() {
   done
 }
 
-# name<TAB>first_config_file
+# name<TAB>configfiles（"path1,path2,..." のまま。パス自体にカンマが含まれることがあるため分割しない）
 wt_compose_projects() {
   need jq
-  docker compose ls -a --format json \
-    | jq -r '.[] | select(.ConfigFiles != null and .ConfigFiles != "") | [.Name, (.ConfigFiles | split(",")[0])] | @tsv'
+  local raw
+  raw=$(docker compose ls -a --format json) \
+    || die "docker compose ls に失敗しました（docker は起動していますか）"
+  printf '%s' "$raw" \
+    | jq -r '.[] | select(.ConfigFiles != null and .ConfigFiles != "") | [.Name, .ConfigFiles] | @tsv'
+}
+
+# configfiles（"path1,path2,..."）から実在する最初の設定ファイルを返す。
+# パス自体にカンマを含むケースがあるため、単純な split(",")[0] は使わず、
+# セグメントを 1 個ずつ増やしながら結合したパスを先頭から順に試す。
+# 見つからなければ何も出力せず正常終了する（呼び出し側で「無い」と判定できるように）。
+wt_compose_first_config() {
+  local configfiles=$1
+  local -a segs
+  IFS=',' read -r -a segs <<< "$configfiles"
+  local k joined candidate
+  for ((k = 1; k <= ${#segs[@]}; k++)); do
+    joined=$(printf '%s,' "${segs[@]:0:k}")
+    candidate=${joined%,}
+    [ -e "$candidate" ] && { printf '%s\n' "$candidate"; return 0; }
+  done
+  return 0
 }
 
 wt_compose_orphans() {
-  local name file
+  local name file first
   while IFS=$'\t' read -r name file; do
-    [ -e "$file" ] || printf '%s\n' "$name"
+    first=$(wt_compose_first_config "$file")
+    [ -n "$first" ] || printf '%s\n' "$name"
   done < <(wt_compose_projects)
 }
 
 wt_compose_mismatched() {
-  local name file dir expected
+  local name file dir expected first
   while IFS=$'\t' read -r name file; do
-    [ -e "$file" ] || continue
-    dir=$(dirname "$file")
+    first=$(wt_compose_first_config "$file")
+    [ -n "$first" ] || continue
+    dir=$(dirname "$first")
     git -C "$dir" rev-parse --show-toplevel >/dev/null 2>&1 || continue
     expected=$(wt_project_name "$dir")
     [ "$name" = "$expected" ] || printf '%s\t%s\n' "$name" "$expected"

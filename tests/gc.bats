@@ -50,3 +50,29 @@ EOF
   [ -n "$(wt_ports_for "$REPO/.claude/worktrees/3597")" ]
   [[ "$output" == *"w3597"* ]]
 }
+
+@test "パスにカンマを含む設定ファイルは orphan と誤判定しない" {
+  mkdir -p "$BATS_TEST_TMPDIR/dir,with,comma"
+  touch "$BATS_TEST_TMPDIR/dir,with,comma/docker-compose.yml"
+  export FAKE_COMPOSE_LS_JSON="$(cat <<EOF
+[
+ {"Name":"comma-project","Status":"running(1)","ConfigFiles":"$BATS_TEST_TMPDIR/dir,with,comma/docker-compose.yml"}
+]
+EOF
+)"
+  run wt_compose_orphans
+  [[ "$output" != *"comma-project"* ]]
+}
+
+@test "wt_compose_first_config は候補が全て無ければ何も出さず成功する" {
+  run wt_compose_first_config "/nonexistent/a.yml,/also/missing.yml"
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+}
+
+@test "docker compose ls 失敗時は die して exit 1" {
+  export FAKE_DOCKER_FAIL_COMPOSE_LS=1
+  run cmd_gc --dry-run
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"docker compose ls"* ]]
+}
