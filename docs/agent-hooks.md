@@ -8,6 +8,6 @@ URL と規約が自動で渡る。共有リポジトリの CLAUDE.md には何�
 - `~/.codex/hooks.json` → 同上
 
 エントリ:
-    { "matcher": "", "hooks": [ { "type": "command", "command": "\"$HOME/repo/devenv/bin/wt\" prime", "timeout": 10 } ] }
+    { "matcher": "", "hooks": [ { "type": "command", "command": "\"$HOME/repo/wt-cli/bin/wt\" prime", "timeout": 10 } ] }
 
 wt 管理外の場所では `wt prime` は何も出さないので、全リポジトリに付けて無害。

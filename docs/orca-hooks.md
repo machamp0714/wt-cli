@@ -5,8 +5,8 @@ Orca アプリの UI に直接貼り付ける。
 
 | 欄 | 値 |
 |---|---|
-| Setup script | `"$HOME/repo/devenv/bin/wt" setup` |
-| Archive script | `"$HOME/repo/devenv/bin/wt" teardown` |
+| Setup script | `"$HOME/repo/wt-cli/bin/wt" setup` |
+| Archive script | `"$HOME/repo/wt-cli/bin/wt" teardown` |
 
 現在の設定値は次で確認できる:
 
@@ -20,8 +20,8 @@ hook が新しい worktree を cwd として実行されるかどうかは未確
     pwd > /tmp/orca-setup-cwd.txt; env > /tmp/orca-setup-env.txt
 
 worktree を作成した後 `/tmp/orca-setup-cwd.txt` の内容が新しい worktree のパスであれば、上表の
-`"$HOME/repo/devenv/bin/wt" setup` のまま使ってよい。違うパスであれば、`env` の出力から worktree のパスを
-示す変数を探し、`"$HOME/repo/devenv/bin/wt" setup <path>` の形で明示的にパスを渡すよう Setup script を書き換える。
+`"$HOME/repo/wt-cli/bin/wt" setup` のまま使ってよい。違うパスであれば、`env` の出力から worktree のパスを
+示す変数を探し、`"$HOME/repo/wt-cli/bin/wt" setup <path>` の形で明示的にパスを渡すよう Setup script を書き換える。
 確認が終わったら probe 用の 2 行は削除する。
 
 ## その他の注意

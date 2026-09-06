@@ -1,4 +1,4 @@
-# devenv — worktree 並列開発環境（個人用）
+# wt-cli — worktree 並列開発環境（個人用）
 
 worktree ごとに `https://<repo>-<worktree>.localhost` でアプリを起動し、削除で全部回収する `wt` CLI。
 共有リポジトリには一切変更を加えない。リポジトリごとの差分は `~/.config/devenv/repos/<repo>/` に持つ（このリポジトリには一般例 `repos/example/` だけを置く）。
@@ -6,7 +6,7 @@ worktree ごとに `https://<repo>-<worktree>.localhost` でアプリを起動�
 ## 導入
 
     brew install jq yq direnv bash bats-core shellcheck
-    ln -s ~/repo/devenv/bin/wt /opt/homebrew/bin/wt
+    ln -s ~/repo/wt-cli/bin/wt /opt/homebrew/bin/wt
     wt init      # devproxy ネットワークと Caddy を起動
     wt trust     # Caddy のルート CA を信頼（sudo）
 
