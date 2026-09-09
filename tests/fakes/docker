@@ -2,6 +2,7 @@
 # 偽 docker。呼び出しを FAKE_LOG に記録し、環境変数で応答を制御する。
 #   FAKE_DOCKER_NETWORKS        : "network inspect" で存在するとみなす名前（空白区切り）
 #   FAKE_DOCKER_PS_NAMES        : "ps --format {{.Names}}" が返す名前（空白区切り）
+#   FAKE_DOCKER_PORTS_PUBLISHED : 1 なら "port" が 443/tcp の公開先を返す
 #   FAKE_COMPOSE_LS_JSON        : "compose ls -a --format json" が返す JSON
 #   FAKE_DOCKER_FAIL_COMPOSE_LS : 1 なら "compose ls" が exit 1 で失敗する
 #   FAKE_DOCKER_FAIL_COMPOSE_DOWN : 1 なら "compose ... down" が stderr 付き exit 1 で失敗する
@@ -12,6 +13,14 @@ case "$1 $2" in
   "network create") exit 0 ;;
   "ps "*|"ps")
     for n in ${FAKE_DOCKER_PS_NAMES:-}; do echo "$n"; done; exit 0 ;;
+  "port "*)
+    if [ "$2" = "devenv-caddy" ] \
+      && [ "${3:-}" = "443/tcp" ] \
+      && [ "${FAKE_DOCKER_PORTS_PUBLISHED:-0}" = "1" ]; then
+      echo "0.0.0.0:443"
+      exit 0
+    fi
+    exit 1 ;;
   "compose "*)
     case " $* " in
       *" ls "*)
