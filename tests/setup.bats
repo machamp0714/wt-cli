@@ -10,6 +10,7 @@ setup() {
   touch "$WT/docker-compose.yml"
   CFG="$DEVENV_REPOS_DIR/example-app"; mkdir -p "$CFG"
   export FAKE_DOCKER_PS_NAMES="devenv-caddy"
+  export FAKE_DOCKER_PORTS_PUBLISHED=1
 }
 
 @test "docker 型: .envrc、override コピー、direnv allow、setup 実行、repos.txt 登録" {

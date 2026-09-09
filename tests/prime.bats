@@ -10,6 +10,7 @@ setup() {
   mkdir -p "$DEVENV_REPOS_DIR/example-app"
   printf 'mode: docker\n' > "$DEVENV_REPOS_DIR/example-app/devenv.yml"
   export FAKE_DOCKER_PS_NAMES="devenv-caddy"
+  export FAKE_DOCKER_PORTS_PUBLISHED=1
 }
 
 @test "wt 管理の worktree では URL と規約を出す" {

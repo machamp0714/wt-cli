@@ -8,6 +8,7 @@ setup() {
   make_repo "$REPO"
   CFG="$DEVENV_REPOS_DIR/app"; mkdir -p "$CFG"
   export FAKE_DOCKER_PS_NAMES="devenv-caddy"
+  export FAKE_DOCKER_PORTS_PUBLISHED=1
   cd "$REPO"
 }
 

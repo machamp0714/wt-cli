@@ -8,6 +8,7 @@ setup() {
   make_repo "$REPO"
   git -C "$REPO" tag base-tag
   export FAKE_DOCKER_PS_NAMES="devenv-caddy"
+  export FAKE_DOCKER_PORTS_PUBLISHED=1
   cd "$REPO"
 }
 
